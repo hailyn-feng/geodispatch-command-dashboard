@@ -12,6 +12,22 @@
 
 ---
 
+## 🎬 Live Demo
+
+Experience the system in action:
+
+### 📺 **Command Center Display** (Big Screen)
+**[👉 View Live Screen](https://geodispatch-command-portal.vercel.app/screen)**  
+Real-time map visualization, technician tracking, and live metrics - perfect for office displays
+
+### 👨‍💼 **Admin Management Portal**
+**[👉 Access Dashboard](https://geodispatch-command-portal.vercel.app/admin/schedule)**  
+Full-featured management interface with dispatch, scheduling, and analytics
+
+> 💡 **Tip**: Open the screen view on a large monitor or TV for the best experience!
+
+---
+
 ## 🎯 Why Choose This System?
 
 ### Business Problems Solved
