@@ -8,15 +8,5 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_MAPBOX_TOKEN": "@vite_mapbox_token",
-    "VITE_MAPBOX_PUBLIC_TOKEN": "@vite_mapbox_token"
-  },
-  "build": {
-    "env": {
-      "VITE_MAPBOX_TOKEN": "@vite_mapbox_token",
-      "VITE_MAPBOX_PUBLIC_TOKEN": "@vite_mapbox_token"
-    }
-  }
+  ]
 }
