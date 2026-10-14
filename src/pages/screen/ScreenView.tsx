@@ -99,7 +99,7 @@ export default function ScreenView() {
           {/* Center: Title */}
           <div className="flex flex-col items-center">
             <h1 className="text-2xl font-bold text-white uppercase tracking-wider whitespace-nowrap">
-              GEODISPATCH COMMAND DASHBOARD
+              GEODISPATCH COMMAND PORTAL
             </h1>
             <div className="h-0.5 w-32 bg-gradient-to-r from-transparent via-cyan-400 to-transparent mt-2"></div>
           </div>
