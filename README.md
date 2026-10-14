@@ -17,11 +17,11 @@
 Experience the system in action:
 
 ### 📺 **Command Center Display** (Big Screen)
-**[👉 View Live Screen](https://geodispatch-command-portal.vercel.app/screen)**  
+**<a href="https://geodispatch-command-portal.vercel.app/screen" target="_blank">👉 View Live Screen</a>**  
 Real-time map visualization, technician tracking, and live metrics - perfect for office displays
 
 ### 👨‍💼 **Admin Management Portal**
-**[👉 Access Dashboard](https://geodispatch-command-portal.vercel.app/admin/schedule)**  
+**<a href="https://geodispatch-command-portal.vercel.app/admin/schedule" target="_blank">👉 Access Dashboard</a>**  
 Full-featured management interface with dispatch, scheduling, and analytics
 
 > 💡 **Tip**: Open the screen view on a large monitor or TV for the best experience!
@@ -642,52 +642,4 @@ copies of the Software.
 
 ## 💬 Contact & Support
 
-### For Upwork Clients
-
-📧 **Email**: your.email@example.com  
-💼 **Upwork**: [Your Upwork Profile Link]  
-🌐 **Portfolio**: [Your Portfolio URL]  
-💬 **Schedule a Call**: [Calendly/Meeting Link]
-
-### What I Can Help With
-
-- 🎨 Custom design and branding
-- 🔌 Backend API development
-- 📱 Mobile app development
-- 🚀 Deployment and DevOps
-- 🛠️ Feature customization
-- 📚 Training and documentation
-- 🐛 Bug fixes and maintenance
-- 📈 Performance optimization
-
----
-
-## ⭐ Show Your Support
-
-If this project helped you or your business:
-
-- ⭐ **Star this repository** on GitHub
-- 💼 **Hire me** on Upwork for customization
-- 🔗 **Share** with other service businesses
-- 💬 **Leave feedback** about what features you'd like
-
----
-
-## 🎉 Success Stories
-
-> *"This system reduced our dispatch time from 15 minutes to 2 minutes per job. The drag-and-drop map is a game changer!"*  
-> — HVAC Company Owner
-
-> *"Our customer complaints dropped 40% after we started showing them real-time technician location. ROI in 3 months."*  
-> — Plumbing Service Manager
-
-> *"The display screen in our office keeps everyone aligned. Technicians love the mobile view."*  
-> — Field Service Director
-
----
-
-**🚀 Ready to transform your field service operations?**
-
-**💼 Hire me on Upwork to customize this system for your business!**
-
-**📧 Contact me today for a free consultation!**
+For questions, customization requests, or technical support, please open an issue on GitHub or contact the development team.
