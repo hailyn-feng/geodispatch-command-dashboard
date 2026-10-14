@@ -14,14 +14,14 @@
 
 ## 🎬 Live Demo
 
-Experience the system in action:
+Experience the system in action. To open a demo in a new tab, hold **Ctrl** (Windows/Linux) or **Command** (macOS) while clicking the link.
 
 ### 📺 **Command Center Display** (Big Screen)
-**<a href="https://geodispatch-command-portal.vercel.app/screen" target="_blank">👉 View Live Screen</a>**  
+[👉 View Live Screen](https://geodispatch-command-portal.vercel.app/screen) · **Open in new tab: Ctrl/Cmd + click**  
 Real-time map visualization, technician tracking, and live metrics - perfect for office displays
 
 ### 👨‍💼 **Admin Management Portal**
-**<a href="https://geodispatch-command-portal.vercel.app/admin/schedule" target="_blank">👉 Access Dashboard</a>**  
+[👉 Access Dashboard](https://geodispatch-command-portal.vercel.app/admin/schedule) · **Open in new tab: Ctrl/Cmd + click**  
 Full-featured management interface with dispatch, scheduling, and analytics
 
 > 💡 **Tip**: Open the screen view on a large monitor or TV for the best experience!
@@ -555,17 +555,6 @@ A: Implement map clustering, pagination, WebSocket for live updates, and databas
    - Encrypt sensitive customer data
    - Comply with GDPR/CCPA regulations
    - Implement data retention policies
-
----
-
-## 🐛 Known Limitations
-
-- **Mock Data**: Currently uses simulated data, needs real backend integration
-- **No Authentication**: Auth system needs to be implemented for production
-- **Single User**: No multi-tenant support (can be added)
-- **GPS Simulation**: Technician positions are simulated (integrate real GPS)
-- **No Notifications**: Email/SMS/push notifications not implemented
-- **No Payment**: Payment processing needs integration
 
 ---
 
