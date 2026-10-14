@@ -46,7 +46,6 @@ dist-ssr
 
 # Vercel
 .vercel
-vercel.json
 
 # Lock files (optional - 如果团队协作建议保留 package-lock.json)
 # package-lock.json
