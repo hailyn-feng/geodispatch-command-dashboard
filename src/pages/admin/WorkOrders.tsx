@@ -2,32 +2,53 @@ import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { Link } from 'react-router-dom'
 import { 
-  Search, 
   Plus, 
   Clock, 
   User,
   Edit,
   Trash2,
-  Download,
   X,
   CheckSquare,
   Square,
   ChevronLeft,
   ChevronRight,
-  FileSpreadsheet,
-  Upload
+  Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { WorkOrderStatus, WorkOrderPriority, WorkOrder } from '@/types'
+import AdvancedFilters, { FilterValues } from '@/components/AdvancedFilters'
+import BatchActions from '@/components/BatchActions'
+import ColumnCustomizer, { ColumnConfig } from '@/components/ColumnCustomizer'
+import toast from 'react-hot-toast'
 
 const ITEMS_PER_PAGE = 10
 
+const DEFAULT_COLUMNS: ColumnConfig[] = [
+  { id: 'select', label: 'Select', visible: true },
+  { id: 'id', label: 'Order ID', visible: true },
+  { id: 'title', label: 'Title', visible: true },
+  { id: 'customer', label: 'Customer', visible: true },
+  { id: 'technician', label: 'Technician', visible: true },
+  { id: 'status', label: 'Status', visible: true },
+  { id: 'priority', label: 'Priority', visible: true },
+  { id: 'category', label: 'Category', visible: true },
+  { id: 'scheduledDate', label: 'Scheduled', visible: true },
+  { id: 'actions', label: 'Actions', visible: true },
+]
+
 export default function WorkOrders() {
-  const { workOrders, addWorkOrder, updateWorkOrder, deleteWorkOrder, customers, technicians } = useStore()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<WorkOrderStatus | 'all'>('all')
-  const [priorityFilter, setPriorityFilter] = useState<WorkOrderPriority | 'all'>('all')
-  const [technicianFilter, setTechnicianFilter] = useState<string>('all')
+  const { workOrders, addWorkOrder, updateWorkOrder, deleteWorkOrder, customers, technicians, batchUpdateWorkOrders, batchDeleteWorkOrders, batchAssignTechnician } = useStore()
+  
+  const [filters, setFilters] = useState<FilterValues>({
+    searchTerm: '',
+    status: 'all',
+    priority: 'all',
+    technicianId: 'all',
+    dateRange: { start: '', end: '' },
+    category: 'all',
+  })
+  
+  const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [editingOrder, setEditingOrder] = useState<WorkOrder | null>(null)
@@ -35,17 +56,32 @@ export default function WorkOrders() {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
   const [currentPage, setCurrentPage] = useState(1)
 
+  const categories = Array.from(new Set(workOrders.map(o => o.category)))
+
   const filteredOrders = workOrders.filter((order) => {
     const matchesSearch = 
-      order.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.category.toLowerCase().includes(searchTerm.toLowerCase())
+      order.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      order.customer.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      order.category.toLowerCase().includes(filters.searchTerm.toLowerCase())
     
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
-    const matchesPriority = priorityFilter === 'all' || order.priority === priorityFilter
-    const matchesTechnician = technicianFilter === 'all' || order.technician?.id === technicianFilter
+    const matchesStatus = filters.status === 'all' || order.status === filters.status
+    const matchesPriority = filters.priority === 'all' || order.priority === filters.priority
+    const matchesTechnician = filters.technicianId === 'all' || order.technician?.id === filters.technicianId
+    const matchesCategory = filters.category === 'all' || order.category === filters.category
+    
+    // Date range filter
+    let matchesDateRange = true
+    if (filters.dateRange.start || filters.dateRange.end) {
+      const orderDate = new Date(order.scheduledDate)
+      if (filters.dateRange.start) {
+        matchesDateRange = matchesDateRange && orderDate >= new Date(filters.dateRange.start)
+      }
+      if (filters.dateRange.end) {
+        matchesDateRange = matchesDateRange && orderDate <= new Date(filters.dateRange.end)
+      }
+    }
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesTechnician
+    return matchesSearch && matchesStatus && matchesPriority && matchesTechnician && matchesCategory && matchesDateRange
   })
 
   // Pagination
@@ -100,8 +136,57 @@ export default function WorkOrders() {
       deleteWorkOrder(deletingOrderId)
       setIsDeleteModalOpen(false)
       setDeletingOrderId(null)
+      toast.success('Order deleted successfully')
     }
   }
+
+  const handleBatchUpdateStatus = async (status: any) => {
+    const ids = Array.from(selectedOrders)
+    batchUpdateWorkOrders(ids, { status })
+    setSelectedOrders(new Set())
+    toast.success(`Updated ${ids.length} orders`)
+  }
+
+  const handleBatchAssignTechnician = async (technicianId: string) => {
+    const ids = Array.from(selectedOrders)
+    batchAssignTechnician(ids, technicianId)
+    setSelectedOrders(new Set())
+    const tech = technicians.find(t => t.id === technicianId)
+    toast.success(`Assigned ${ids.length} orders to ${tech?.name}`)
+  }
+
+  const handleBatchDelete = async () => {
+    const ids = Array.from(selectedOrders)
+    batchDeleteWorkOrders(ids)
+    setSelectedOrders(new Set())
+    toast.success(`Deleted ${ids.length} orders`)
+  }
+
+  const handleBatchExport = () => {
+    const selectedData = workOrders.filter(o => selectedOrders.has(o.id))
+    const csv = [
+      ['ID', 'Title', 'Customer', 'Status', 'Priority', 'Category', 'Scheduled Date'].join(','),
+      ...selectedData.map(o => [
+        o.id,
+        o.title,
+        o.customer.name,
+        o.status,
+        o.priority,
+        o.category,
+        o.scheduledDate
+      ].join(','))
+    ].join('\n')
+    
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `orders-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    toast.success(`Exported ${selectedOrders.size} orders`)
+  }
+
+  const visibleColumns = columns.filter(c => c.visible)
 
   const handleSaveOrder = (orderData: any) => {
     if (editingOrder) {
@@ -114,67 +199,6 @@ export default function WorkOrders() {
     setSelectedOrders(new Set())
   }
 
-  const handleExportSelected = () => {
-    const ordersToExport = workOrders.filter(o => selectedOrders.has(o.id))
-    const csv = [
-      ['ID', 'Title', 'Customer', 'Technician', 'Priority', 'Status', 'Scheduled Date'].join(','),
-      ...ordersToExport.map(o => [
-        o.id,
-        o.title,
-        o.customer.name,
-        o.technician?.name || 'Unassigned',
-        o.priority,
-        o.status,
-        new Date(o.scheduledDate).toLocaleDateString()
-      ].join(','))
-    ].join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `work-orders-${new Date().toISOString().split('T')[0]}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const handleExportSingleToExcel = async (order: WorkOrder) => {
-    // Dynamically import xlsx
-    const XLSX = await import('xlsx')
-    
-    // Prepare data
-    const data = [
-      ['Work Order Details', ''],
-      ['ID', order.id],
-      ['Title', order.title],
-      ['Description', order.description],
-      ['Customer', order.customer.name],
-      ['Customer Email', order.customer.email],
-      ['Customer Phone', order.customer.phone],
-      ['Technician', order.technician?.name || 'Unassigned'],
-      ['Priority', order.priority],
-      ['Status', order.status],
-      ['Category', order.category],
-      ['Scheduled Date', new Date(order.scheduledDate).toLocaleString()],
-      ['Address', order.location.address],
-      ['Estimated Duration (hrs)', order.estimatedDuration],
-      ['Notes', order.notes.join('; ')],
-    ]
-
-    // Create worksheet
-    const ws = XLSX.utils.aoa_to_sheet(data)
-    
-    // Set column widths
-    ws['!cols'] = [{ wch: 25 }, { wch: 50 }]
-    
-    // Create workbook
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Work Order')
-    
-    // Save file
-    XLSX.writeFile(wb, `WorkOrder_${order.id}_${new Date().toISOString().split('T')[0]}.xlsx`)
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -184,13 +208,20 @@ export default function WorkOrders() {
             Manage and track all work orders
           </p>
         </div>
-        <button
-          onClick={handleNewOrder}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="h-5 w-5" />
-          New Order
-        </button>
+        <div className="flex items-center gap-3">
+          <ColumnCustomizer 
+            columns={columns}
+            onColumnsChange={setColumns}
+            storageKey="work-orders-columns"
+          />
+          <button
+            onClick={handleNewOrder}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="h-5 w-5" />
+            New Order
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -213,73 +244,24 @@ export default function WorkOrders() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search orders..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
-          
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as WorkOrderStatus | 'all')}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="assigned">Assigned</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
-          </select>
+      {/* Advanced Filters */}
+      <AdvancedFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        technicians={technicians.map(t => ({ id: t.id, name: t.name }))}
+        categories={categories}
+      />
 
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value as WorkOrderPriority | 'all')}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          >
-            <option value="all">All Priority</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
-
-          <select
-            value={technicianFilter}
-            onChange={(e) => setTechnicianFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          >
-            <option value="all">All Technicians</option>
-            {technicians.map((tech) => (
-              <option key={tech.id} value={tech.id}>{tech.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {selectedOrders.size > 0 && (
-          <div className="mt-4 flex items-center justify-between pt-4 border-t dark:border-gray-700">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {selectedOrders.size} order(s) selected
-            </span>
-            <button
-              onClick={handleExportSelected}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <Download className="h-4 w-4" />
-              Export Selected
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Batch Actions */}
+      <BatchActions
+        selectedCount={selectedOrders.size}
+        onBatchUpdateStatus={handleBatchUpdateStatus}
+        onBatchAssignTechnician={handleBatchAssignTechnician}
+        onBatchDelete={handleBatchDelete}
+        onBatchExport={handleBatchExport}
+        onClearSelection={() => setSelectedOrders(new Set())}
+        technicians={technicians}
+      />
 
       {/* Orders Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -287,111 +269,169 @@ export default function WorkOrders() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
-                <th className="w-12 px-4 py-3">
-                  <button onClick={handleSelectAll} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                    {selectedOrders.size === paginatedOrders.length && paginatedOrders.length > 0 ? (
-                      <CheckSquare className="h-5 w-5" />
-                    ) : (
-                      <Square className="h-5 w-5" />
+                {visibleColumns.map((col) => (
+                  <th 
+                    key={col.id} 
+                    className={cn(
+                      "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase",
+                      col.id === 'select' && "w-12",
+                      col.id === 'actions' && "text-right"
                     )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Title</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Technician</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Priority</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Scheduled</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                  >
+                    {col.id === 'select' ? (
+                      <button onClick={handleSelectAll} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        {selectedOrders.size === paginatedOrders.length && paginatedOrders.length > 0 ? (
+                          <CheckSquare className="h-5 w-5" />
+                        ) : (
+                          <Square className="h-5 w-5" />
+                        )}
+                      </button>
+                    ) : (
+                      col.label
+                    )}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-4 py-4">
-                    <button 
-                      onClick={() => handleSelectOrder(order.id)}
-                      className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    >
-                      {selectedOrders.has(order.id) ? (
-                        <CheckSquare className="h-5 w-5 text-blue-600" />
-                      ) : (
-                        <Square className="h-5 w-5" />
-                      )}
-                    </button>
-                  </td>
-                  <td className="px-4 py-4">
-                    <Link 
-                      to={`/admin/work-orders/${order.id}`}
-                      className="font-medium text-gray-900 dark:text-white hover:text-blue-600"
-                    >
-                      {order.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
-                    {order.customer.name}
-                  </td>
-                  <td className="px-4 py-4">
-                    {order.technician ? (
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <User className="h-4 w-4" />
-                        {order.technician.name}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-400">Unassigned</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={cn(
-                      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                      order.priority === 'urgent' && 'bg-red-100 text-red-800',
-                      order.priority === 'high' && 'bg-orange-100 text-orange-800',
-                      order.priority === 'medium' && 'bg-yellow-100 text-yellow-800',
-                      order.priority === 'low' && 'bg-gray-100 text-gray-800'
-                    )}>
-                      {order.priority}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={cn(
-                      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                      order.status === 'completed' && 'bg-green-100 text-green-800',
-                      order.status === 'in-progress' && 'bg-blue-100 text-blue-800',
-                      order.status === 'assigned' && 'bg-purple-100 text-purple-800',
-                      order.status === 'pending' && 'bg-yellow-100 text-yellow-800'
-                    )}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <Clock className="h-4 w-4" />
-                      {new Date(order.scheduledDate).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleExportSingleToExcel(order)}
-                        className="p-1 text-gray-600 dark:text-gray-400 hover:text-green-600"
-                        title="Export to Excel"
-                      >
-                        <FileSpreadsheet className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleEditOrder(order)}
-                        className="p-1 text-gray-600 dark:text-gray-400 hover:text-blue-600"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(order.id)}
-                        className="p-1 text-gray-600 dark:text-gray-400 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {visibleColumns.map((col) => {
+                    // Select checkbox
+                    if (col.id === 'select') {
+                      return (
+                        <td key={col.id} className="px-4 py-4">
+                          <button 
+                            onClick={() => handleSelectOrder(order.id)}
+                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          >
+                            {selectedOrders.has(order.id) ? (
+                              <CheckSquare className="h-5 w-5 text-blue-600" />
+                            ) : (
+                              <Square className="h-5 w-5" />
+                            )}
+                          </button>
+                        </td>
+                      )
+                    }
+                    // Order ID
+                    if (col.id === 'id') {
+                      return (
+                        <td key={col.id} className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
+                          #{order.id.slice(0, 8)}
+                        </td>
+                      )
+                    }
+                    // Title
+                    if (col.id === 'title') {
+                      return (
+                        <td key={col.id} className="px-4 py-4">
+                          <Link 
+                            to={`/admin/work-orders/${order.id}`}
+                            className="font-medium text-gray-900 dark:text-white hover:text-blue-600"
+                          >
+                            {order.title}
+                          </Link>
+                        </td>
+                      )
+                    }
+                    // Customer
+                    if (col.id === 'customer') {
+                      return (
+                        <td key={col.id} className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
+                          {order.customer.name}
+                        </td>
+                      )
+                    }
+                    // Technician
+                    if (col.id === 'technician') {
+                      return (
+                        <td key={col.id} className="px-4 py-4">
+                          {order.technician ? (
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                              <User className="h-4 w-4" />
+                              {order.technician.name}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">Unassigned</span>
+                          )}
+                        </td>
+                      )
+                    }
+                    // Status
+                    if (col.id === 'status') {
+                      return (
+                        <td key={col.id} className="px-4 py-4">
+                          <span className={cn(
+                            'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                            order.status === 'completed' && 'bg-green-100 text-green-800',
+                            order.status === 'in-progress' && 'bg-blue-100 text-blue-800',
+                            order.status === 'assigned' && 'bg-purple-100 text-purple-800',
+                            order.status === 'pending' && 'bg-yellow-100 text-yellow-800'
+                          )}>
+                            {order.status}
+                          </span>
+                        </td>
+                      )
+                    }
+                    // Priority
+                    if (col.id === 'priority') {
+                      return (
+                        <td key={col.id} className="px-4 py-4">
+                          <span className={cn(
+                            'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                            order.priority === 'urgent' && 'bg-red-100 text-red-800',
+                            order.priority === 'high' && 'bg-orange-100 text-orange-800',
+                            order.priority === 'medium' && 'bg-yellow-100 text-yellow-800',
+                            order.priority === 'low' && 'bg-gray-100 text-gray-800'
+                          )}>
+                            {order.priority}
+                          </span>
+                        </td>
+                      )
+                    }
+                    // Category
+                    if (col.id === 'category') {
+                      return (
+                        <td key={col.id} className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
+                          {order.category}
+                        </td>
+                      )
+                    }
+                    // Scheduled Date
+                    if (col.id === 'scheduledDate') {
+                      return (
+                        <td key={col.id} className="px-4 py-4">
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <Clock className="h-4 w-4" />
+                            {new Date(order.scheduledDate).toLocaleDateString()}
+                          </div>
+                        </td>
+                      )
+                    }
+                    // Actions
+                    if (col.id === 'actions') {
+                      return (
+                        <td key={col.id} className="px-4 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleEditOrder(order)}
+                              className="p-1 text-gray-600 dark:text-gray-400 hover:text-blue-600"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(order.id)}
+                              className="p-1 text-gray-600 dark:text-gray-400 hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )
+                    }
+                    return null
+                  })}
                 </tr>
               ))}
             </tbody>

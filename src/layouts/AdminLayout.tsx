@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { useStore } from '@/store/useStore'
 import { hasPermission, MOCK_USERS } from '@/lib/permissions'
 import CustomSelect from '@/components/CustomSelect'
+import NotificationCenter from '@/components/NotificationCenter'
 
 // Navigation configuration - each menu item has permission requirements
 const navigation = [
@@ -184,6 +185,9 @@ export default function AdminLayout() {
           </button>
 
           <div className="flex-1" />
+
+          {/* Notification Center */}
+          <NotificationCenter />
 
           {/* Hint text + Capsule toggle - Cyan gradient style - Small version - Theme adapted */}
           <div className="flex items-center gap-2">

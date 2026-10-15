@@ -7,7 +7,7 @@ import {
   Star,
   AlertCircle 
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
 
 const revenueData = [
   { name: 'Mon', revenue: 4200 },
@@ -27,6 +27,31 @@ const ordersData = [
   { name: 'Fri', completed: 20, pending: 4 },
   { name: 'Sat', completed: 22, pending: 9 },
   { name: 'Sun', completed: 16, pending: 5 },
+]
+
+const statusDistribution = [
+  { name: 'Completed', value: 145, color: '#10B981' },
+  { name: 'In Progress', value: 68, color: '#3B82F6' },
+  { name: 'Pending', value: 42, color: '#F59E0B' },
+  { name: 'Cancelled', value: 15, color: '#6B7280' },
+]
+
+const categoryData = [
+  { name: 'Plumbing', value: 85, color: '#8B5CF6' },
+  { name: 'Electrical', value: 72, color: '#EC4899' },
+  { name: 'HVAC', value: 58, color: '#F59E0B' },
+  { name: 'Maintenance', value: 45, color: '#10B981' },
+  { name: 'Other', value: 10, color: '#6B7280' },
+]
+
+const performanceData = [
+  { time: '00:00', orders: 12 },
+  { time: '04:00', orders: 8 },
+  { time: '08:00', orders: 35 },
+  { time: '12:00', orders: 52 },
+  { time: '16:00', orders: 48 },
+  { time: '20:00', orders: 28 },
+  { time: '23:59', orders: 15 },
 ]
 
 export default function Dashboard() {
@@ -145,6 +170,108 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* New Charts Row - Pie Charts */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+            Order Status Distribution
+          </h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie
+                data={statusDistribution}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {statusDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#fff'
+                }} 
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+            Service Categories
+          </h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie
+                data={categoryData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {categoryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#fff'
+                }} 
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Performance Area Chart */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+          Daily Order Volume
+        </h3>
+        <ResponsiveContainer width="100%" height={240}>
+          <AreaChart data={performanceData}>
+            <defs>
+              <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey="time" stroke="#9CA3AF" />
+            <YAxis stroke="#9CA3AF" />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#1F2937', 
+                border: 'none',
+                borderRadius: '8px',
+                color: '#fff'
+              }} 
+            />
+            <Area 
+              type="monotone" 
+              dataKey="orders" 
+              stroke="#3B82F6" 
+              fillOpacity={1} 
+              fill="url(#colorOrders)" 
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Urgent Orders & Technician Status */}

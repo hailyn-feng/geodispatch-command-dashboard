@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import AdminLayout from './layouts/AdminLayout'
 import ScreenLayout from './layouts/ScreenLayout'
 import DemoLayout from './layouts/DemoLayout'
@@ -23,8 +24,9 @@ import Demo1 from './pages/demos/Demo1'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <>
+      <BrowserRouter>
+        <Routes>
         {/* Root redirect */}
         <Route path="/" element={<Navigate to="/screen" replace />} />
 
@@ -55,6 +57,32 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    
+    {/* Toast Notifications */}
+    <Toaster 
+      position="top-right"
+      toastOptions={{
+        duration: 3000,
+        style: {
+          background: '#1F2937',
+          color: '#fff',
+          borderRadius: '8px',
+        },
+        success: {
+          iconTheme: {
+            primary: '#10B981',
+            secondary: '#fff',
+          },
+        },
+        error: {
+          iconTheme: {
+            primary: '#EF4444',
+            secondary: '#fff',
+          },
+        },
+      }}
+    />
+  </>
   )
 }
 

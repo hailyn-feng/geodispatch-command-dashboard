@@ -19,6 +19,9 @@ interface AppState {
   addWorkOrder: (order: WorkOrder) => void
   updateWorkOrder: (id: string, updates: Partial<WorkOrder>) => void
   deleteWorkOrder: (id: string) => void
+  batchUpdateWorkOrders: (ids: string[], updates: Partial<WorkOrder>) => void
+  batchDeleteWorkOrders: (ids: string[]) => void
+  batchAssignTechnician: (orderIds: string[], technicianId: string) => void
   assignTechnician: (orderId: string, technicianId: string) => void
   updateTechnicianLocation: (id: string, lat: number, lng: number) => void
   updateTechnicianStatus: (id: string, status: Technician['status']) => void
@@ -66,6 +69,30 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       workOrders: state.workOrders.filter((order) => order.id !== id),
     })),
+
+  batchUpdateWorkOrders: (ids, updates) =>
+    set((state) => ({
+      workOrders: state.workOrders.map((order) =>
+        ids.includes(order.id) ? { ...order, ...updates } : order
+      ),
+    })),
+
+  batchDeleteWorkOrders: (ids) =>
+    set((state) => ({
+      workOrders: state.workOrders.filter((order) => !ids.includes(order.id)),
+    })),
+
+  batchAssignTechnician: (orderIds, technicianId) =>
+    set((state) => {
+      const technician = state.technicians.find((t) => t.id === technicianId)
+      return {
+        workOrders: state.workOrders.map((order) =>
+          orderIds.includes(order.id)
+            ? { ...order, technician, status: 'assigned' as const }
+            : order
+        ),
+      }
+    }),
 
   assignTechnician: (orderId, technicianId) =>
     set((state) => {
